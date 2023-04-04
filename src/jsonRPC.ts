@@ -1,18 +1,12 @@
 import { z } from "zod";
 
-const jsonRPCResponseCore = {
-  jsonrpc: z.literal("2.0"),
-  id: z.string(),
-};
-
 const jsonRPCResponseSchema = z.union([
   z.object({
-    ...jsonRPCResponseCore,
+    id: z.string(),
     result: z.any(),
   }),
-
   z.object({
-    ...jsonRPCResponseCore,
+    id: z.string(),
     error: z.object({
       code: z.number(),
       message: z.string(),

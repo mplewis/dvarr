@@ -35,7 +35,6 @@ describe("btn", () => {
       const q2 = {
         text: "Mr. Robot",
         tvdbID: "123",
-        filter: "season",
         season: "1",
       };
       expect(await resultIds(q2)).toEqual(["4"]);
@@ -43,7 +42,6 @@ describe("btn", () => {
       const q3 = {
         text: "Mr. Robot",
         tvdbID: "123",
-        filter: "episode",
         season: "1",
         episode: "2",
       };

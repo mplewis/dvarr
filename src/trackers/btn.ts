@@ -1,17 +1,24 @@
 import { match } from "ts-pattern";
+import { z } from "zod";
 
 import { makeJSONRPCRequest } from "../jsonRPC";
 
 const btnAPIURL = "https://api.broadcasthe.net";
 
-export type Query = {
-  text: string;
-  tvdbID: string;
-} & (
-  | {}
-  | { filter: "season"; season: string }
-  | { filter: "episode"; season: string; episode: string }
-);
+export const querySchema = z
+  .object({
+    text: z.string(),
+    tvdbID: z.string(),
+  })
+  .and(
+    z.union([
+      z.object({ season: z.string(), episode: z.string() }),
+      z.object({ season: z.string() }),
+      z.object({}),
+    ])
+  );
+
+export type Query = z.infer<typeof querySchema>;
 
 export type BTNSearchResult = {
   ID: string; // we populate this
@@ -46,13 +53,10 @@ function padTwoDigits(n: string): string {
 }
 
 function groupNameFor(query: Query): string | null {
-  return match(query)
-    .with({ filter: "season" }, (q) => `Season ${q.season}`)
-    .with(
-      { filter: "episode" },
-      (q) => `S${padTwoDigits(q.season)}E${padTwoDigits(q.episode)}`
-    )
-    .otherwise(() => null);
+  if ("episode" in query)
+    return `S${padTwoDigits(query.season)}E${padTwoDigits(query.episode)}`;
+  if ("season" in query) return `Season ${query.season}`;
+  return null;
 }
 
 export async function searchResultsFor(
