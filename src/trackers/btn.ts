@@ -1,6 +1,6 @@
 import { match } from "ts-pattern";
 
-import { makeJSONRPCRequest } from "../jsonAPI";
+import { makeJSONRPCRequest } from "../jsonRPC";
 
 const btnAPIURL = "https://api.broadcasthe.net";
 
