@@ -1,7 +1,7 @@
 import { match } from "ts-pattern";
 import { z } from "zod";
 
-import { makeJSONRPCRequest } from "../jsonRPC";
+import { errorFor, errorMsgFor, makeJSONRPCRequest } from "../jsonRPC";
 
 const btnAPIURL = "https://api.broadcasthe.net";
 
@@ -69,10 +69,7 @@ export async function searchResultsFor(
     key: process.env.BTN_API_KEY,
   };
   const resp = await fetcher(btnAPIURL, "getTorrentsSearch", params);
-  if ("error" in resp) {
-    const { code, message, data } = resp.error;
-    return { error: `BTN API Error ${code}: ${message}: ${data}` };
-  }
+  if ("error" in resp) return errorFor("BTN API error", resp.error);
   const items = resp.result.torrents as Record<string, BTNSearchResult>;
   const results = Object.entries(items).map(([k, v]) => ({ ...v, ID: k }));
   return { results };
