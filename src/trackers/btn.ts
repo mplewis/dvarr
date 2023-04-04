@@ -41,7 +41,7 @@ export type BTNSearchResult = {
   YoutubeTrailer: string;
 };
 
-export function padTwoDigits(n: string): string {
+function padTwoDigits(n: string): string {
   return n.toString().length === 1 ? `0${n}` : n;
 }
 
@@ -55,7 +55,7 @@ function groupNameFor(query: Query): string | null {
     .otherwise(() => null);
 }
 
-async function searchResultsFor(
+export async function searchResultsFor(
   text: string,
   fetcher = makeJSONRPCRequest
 ): Promise<{ results: BTNSearchResult[] } | { error: string }> {
