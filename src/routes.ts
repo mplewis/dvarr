@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { Express, Response } from "express";
 import { z } from "zod";
 import { querySchema, searchBTN } from "./trackers/btn";
-import { addTorrentFromURL, login } from "./torrenters/deluge";
+import { Clients } from "./config";
 
 const prisma = new PrismaClient();
 
@@ -15,20 +15,7 @@ async function catchall(res: Response, callable: () => Promise<void>) {
   }
 }
 
-function env(key: string): string {
-  const value = process.env[key];
-  if (value === undefined) throw new Error(`Missing env var ${key}`);
-  return value;
-}
-
-function envInt(key: string): number {
-  const value = env(key);
-  const parsed = parseInt(value);
-  if (isNaN(parsed)) throw new Error(`Env var ${key} is not a number`);
-  return parsed;
-}
-
-export function mountRoutes(app: Express) {
+export function mountRoutes(app: Express, clients: Clients) {
   app.get("/", async (_req, res) => {
     catchall(res, async () => {
       const user = await prisma.user.create({
@@ -57,17 +44,6 @@ export function mountRoutes(app: Express) {
     });
   });
 
-  app.get("/login", async (_req, res) => {
-    catchall(res, async () => {
-      const results = await login({
-        host: env("DELUGE_HOST"),
-        port: envInt("DELUGE_PORT"),
-        password: env("DELUGE_PASSWORD"),
-      });
-      res.json(results);
-    });
-  });
-
   app.get("/add_torrent", async (req, res) => {
     catchall(res, async () => {
       const schema = z.object({ url: z.string() });
@@ -77,10 +53,7 @@ export function mountRoutes(app: Express) {
         return;
       }
       const { url } = parsed.data;
-      const results = await addTorrentFromURL(
-        { host: env("DELUGE_HOST"), port: envInt("DELUGE_PORT") },
-        url
-      );
+      const results = await clients.deluge.addTorrentFromURL(url);
       res.json(results);
     });
   });

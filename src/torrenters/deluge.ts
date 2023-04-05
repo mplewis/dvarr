@@ -1,5 +1,4 @@
 import { errorFor, makeJSONRPCRequest } from "../jsonRPC";
-import { encode } from "base64-arraybuffer";
 
 type DelugeConfig = {
   host: string;
@@ -7,53 +6,56 @@ type DelugeConfig = {
   password: string;
 };
 
-let globalAuth = ""; // HACK
-
 function delugeURL(config: DelugeConfig) {
   return `http://${config.host}:${config.port}/json`;
 }
 
-function errorFrom(e: any): { error: string } {
-  const msg: string = e.stack?.toString() ?? e.toString();
-  return { error: msg };
-}
-
-export async function login(
-  config: DelugeConfig
+async function authenticate(
+  url: string,
+  password: string
 ): Promise<{ cookie: string } | { error: string }> {
-  const { headers, response } = await makeJSONRPCRequest({
-    url: delugeURL(config),
-    method: "auth.login",
-    params: [config.password],
-  });
+  const args = { url, method: "auth.login", params: [password] };
+  const { headers, response } = await makeJSONRPCRequest(args);
   if ("error" in response) return errorFor("Deluge API error", response.error);
   const cookie = headers.get("Set-Cookie");
   if (!cookie) return { error: "No authentication cookie in response" };
-  globalAuth = cookie;
   return { cookie };
 }
 
-export async function addTorrentFromURL(
-  config: DelugeConfig,
-  torrentURL: string
-): Promise<{ torrentID: string } | { error: string }> {
-  const url = delugeURL(config);
-  const { response } = await makeJSONRPCRequest({
-    url,
-    headers: { Cookie: globalAuth },
-    method: "web.download_torrent_from_url",
-    params: [torrentURL],
-  });
-  if ("error" in response) return errorFor("Deluge API error", response.error);
-  const path = response.result;
+export class DelugeClient {
+  private cookie: string | undefined;
+  constructor(private config: DelugeConfig) {}
 
-  const { response: response2 } = await makeJSONRPCRequest({
-    url,
-    headers: { Cookie: globalAuth },
-    method: "web.add_torrents",
-    params: [[{ path, options: { add_paused: true } }]],
-  });
-  if ("error" in response2)
-    return errorFor("Deluge API error", response2.error);
-  return { torrentID: response2.result };
+  private async req(
+    method: string,
+    params: any
+  ): Promise<{ result: any } | { error: string }> {
+    const url = delugeURL(this.config);
+    if (!this.cookie) {
+      const loginResult = await authenticate(url, this.config.password);
+      if ("error" in loginResult) return loginResult;
+      console.log("authed");
+      this.cookie = loginResult.cookie;
+    }
+    const args = { url, method, params, headers: { Cookie: this.cookie } };
+    const { response } = await makeJSONRPCRequest(args);
+    if ("error" in response)
+      return errorFor("Deluge API error", response.error);
+    return { result: response.result };
+  }
+
+  async addTorrentFromURL(
+    torrentURL: string
+  ): Promise<{ torrentID: string } | { error: string }> {
+    const resp = await this.req("web.download_torrent_from_url", [torrentURL]);
+    if ("error" in resp) return resp;
+    const path = resp.result;
+
+    console.log("resp1");
+    const resp2 = await this.req("web.add_torrents", [
+      [{ path, options: { add_paused: true } }],
+    ]);
+    if ("error" in resp2) return resp2;
+    return { torrentID: resp2.result[0][1] };
+  }
 }
