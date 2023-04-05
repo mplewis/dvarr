@@ -18,21 +18,6 @@ function errorFrom(e: any): { error: string } {
   return { error: msg };
 }
 
-async function downloadFile(
-  url: string
-): Promise<{ filename: string; data: ArrayBuffer } | { error: string }> {
-  try {
-    const resp = await fetch(url);
-    console.log({ headers: resp.headers });
-    const filename =
-      resp.headers.get("Content-Disposition")?.split("=")[1] ??
-      "MISSING_FILENAME.torrent";
-    return { filename, data: await resp.arrayBuffer() };
-  } catch (e: any) {
-    return errorFrom(e);
-  }
-}
-
 export async function login(
   config: DelugeConfig
 ): Promise<{ cookie: string } | { error: string }> {
@@ -52,19 +37,23 @@ export async function addTorrentFromURL(
   config: DelugeConfig,
   torrentURL: string
 ): Promise<{ torrentID: string } | { error: string }> {
-  const file = await downloadFile(torrentURL);
-  if ("error" in file) return file;
-  const { filename, data } = file;
-  const filedump = encode(data);
-  console.log(filedump);
-  const options = { add_paused: false, remove_at_ratio: false };
-  const params = { filename, filedump, options };
+  const url = delugeURL(config);
   const { response } = await makeJSONRPCRequest({
-    url: delugeURL(config),
-    method: "core.add_torrent_file",
-    params,
+    url,
     headers: { Cookie: globalAuth },
+    method: "web.download_torrent_from_url",
+    params: [torrentURL],
   });
   if ("error" in response) return errorFor("Deluge API error", response.error);
-  return { torrentID: response.result };
+  const path = response.result;
+
+  const { response: response2 } = await makeJSONRPCRequest({
+    url,
+    headers: { Cookie: globalAuth },
+    method: "web.add_torrents",
+    params: [[{ path, options: { add_paused: true } }]],
+  });
+  if ("error" in response2)
+    return errorFor("Deluge API error", response2.error);
+  return { torrentID: response2.result };
 }
