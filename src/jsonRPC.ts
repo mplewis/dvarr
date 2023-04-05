@@ -41,12 +41,7 @@ export async function makeJSONRPCRequest(args: {
   return { headers: resp.headers, response: jsonRPCResponseSchema.parse(json) };
 }
 
-export function errorFor(
-  prefix: string,
-  error: { code: number; message: string; data?: any }
-) {
-  let msg = [prefix, error.code, error.message, error.data]
-    .filter(Boolean)
-    .join(": ");
+export function errorFor(prefix: string, error: { code: number; message: string; data?: any }) {
+  let msg = [prefix, error.code, error.message, error.data].filter(Boolean).join(": ");
   return { error: msg };
 }

@@ -11,11 +11,7 @@ export const querySchema = z
     tvdbID: z.string(),
   })
   .and(
-    z.union([
-      z.object({ season: z.string(), episode: z.string() }),
-      z.object({ season: z.string() }),
-      z.object({}),
-    ])
+    z.union([z.object({ season: z.string(), episode: z.string() }), z.object({ season: z.string() }), z.object({})])
   );
 
 export type Query = z.infer<typeof querySchema>;
@@ -53,8 +49,7 @@ function padTwoDigits(n: string): string {
 }
 
 function groupNameFor(query: Query): string | null {
-  if ("episode" in query)
-    return `S${padTwoDigits(query.season)}E${padTwoDigits(query.episode)}`;
+  if ("episode" in query) return `S${padTwoDigits(query.season)}E${padTwoDigits(query.episode)}`;
   if ("season" in query) return `Season ${query.season}`;
   return null;
 }

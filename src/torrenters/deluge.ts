@@ -13,10 +13,7 @@ type DelugeConfig = {
  * @param password The password to use to authenticate
  * @returns The login cookie, or an error
  */
-async function authenticate(
-  url: string,
-  password: string
-): Promise<{ cookie: string } | { error: string }> {
+async function authenticate(url: string, password: string): Promise<{ cookie: string } | { error: string }> {
   const args = { url, method: "auth.login", params: [password] };
   const { headers, response } = await makeJSONRPCRequest(args);
   if ("error" in response) return errorFor("Deluge API error", response.error);
@@ -37,10 +34,7 @@ export class DelugeClient {
    * @param params The params to pass to the method
    * @returns The result of the method call, or an error
    */
-  private async req(
-    method: string,
-    params: any
-  ): Promise<{ result: any } | { error: string }> {
+  private async req(method: string, params: any): Promise<{ result: any } | { error: string }> {
     const url = `http://${this.config.host}:${this.config.port}/json`;
     if (!this.cookie) {
       const loginResult = await authenticate(url, this.config.password);
@@ -49,16 +43,15 @@ export class DelugeClient {
     }
     const args = { url, method, params, headers: { Cookie: this.cookie } };
     const { response } = await makeJSONRPCRequest(args);
-    if ("error" in response)
-      return errorFor("Deluge API error", response.error);
+    if ("error" in response) return errorFor("Deluge API error", response.error);
     return { result: response.result };
   }
 
   /**
    * Add a torrent from a URL.
    * @param torrentURL The URL to the torrent file to add
-   * @returns `added` if the torrent was added, `alreadyExists` if the torrent
-   *     already existed, or `error` if there was an error
+   * @returns `added` if the torrent was added, `alreadyExists` if the torrent already existed, or `error` if there
+   *     was an error
    */
   async addTorrentFromURL(
     torrentURL: string
@@ -90,12 +83,9 @@ export class DelugeClient {
   /**
    * Get the status of a torrent.
    * @param torrentID The ID (hash) of the torrent
-   * @returns `notFound` if the torrent was not found, `name` if the torrent
-   *     was found, or `error` if there was an error
+   * @returns `notFound` if the torrent was not found, `name` if the torrent was found, or `error` if there was an error
    */
-  async getStatus(
-    torrentID: string
-  ): Promise<{ notFound: true } | { name: string } | { error: string }> {
+  async getStatus(torrentID: string): Promise<{ notFound: true } | { name: string } | { error: string }> {
     const params = [torrentID, ["name"]];
     const resp = await this.req("web.get_torrent_status", params);
     if ("error" in resp) return resp;

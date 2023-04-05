@@ -67,11 +67,7 @@ describe("btn", () => {
       let method = "";
       let params: Record<string, any> = {};
       process.env.BTN_API_KEY = "SOME_API_KEY";
-      const fetcher = async (
-        xurl: string,
-        xmethod: string,
-        xparams: Record<string, any>
-      ) => {
+      const fetcher = async (xurl: string, xmethod: string, xparams: Record<string, any>) => {
         url = xurl;
         method = xmethod;
         params = xparams;
