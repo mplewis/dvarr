@@ -36,9 +36,7 @@ export async function makeJSONRPCRequest(args: {
   const { url, method, params } = args;
   const { headers: rpcHeaders, body } = buildJSONRPCRequest(method, params);
   const headers = { ...rpcHeaders, ...(args.headers ?? {}) };
-  console.log(headers);
   const resp = await fetch(url, { method: "POST", headers, body });
-  console.log(resp);
   const json = await resp.json();
   return { headers: resp.headers, response: jsonRPCResponseSchema.parse(json) };
 }
